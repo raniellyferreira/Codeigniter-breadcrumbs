@@ -5,18 +5,50 @@
  * This class manages the breadcrumb object
  *
  * @package		Breadcrumb
- * @version		1.0
+ * @version		1.1
+ * @last edit	24/11/2015
  * @author 		Buti <buti@nobuti.com>
- * @copyright 	Copyright (c) 2012, Buti
+ * @edited by	Ranielly Ferreira <raniellyferreira@outlook.com>
+ * @copyright 	Copyright (c) 2012-2015, Buti
  * @link		https://github.com/nobuti/codeigniter-breadcrumb
+ * @link		https://github.com/raniellyferreira/Codeigniter-breadcrumbs
  */
-class Breadcrumbs {
+ 
+ if(false)
+ {
+/*
+| -------------------------------------------------------------------
+| BREADCRUMB CONFIG
+| -------------------------------------------------------------------
+| This file will contain some breadcrumbs' settings.
+| Defaults provided for twitter bootstrap 2.0
+*/
+$config['crumb']['divider'] 			= '<span class="divider">/</span>';
+$config['crumb']['full_tag_open'] 	= '<ul class="breadcrumb">';
+$config['crumb']['full_tag_close'] 	= '</ul>';
+$config['crumb']['tag_open'] 		= '<li>';
+$config['crumb']['tag_close'] 		= '</li>';
+$config['crumb']['last_tag_open'] 	= '<li class="active">';
+$config['crumb']['last_tag_close'] 	= '</li>';
+ }
+ 
+ 
+class Breadcrumbs_model extends CI_Model {
 	
 	/**
 	 * Breadcrumbs stack
 	 *
      */
 	private $breadcrumbs = array();
+	private $configs = array();
+	
+	public $divider 			= '<span class="divider">/</span>';
+	public $full_tag_open 	= '<ul class="breadcrumb">';
+	public $full_tag_close 	= '</ul>';
+	public $tag_open 		= '<li>';
+	public $tag_close 		= '</li>';
+	public $last_tag_open 	= '<li class="active">';
+	public $last_tag_close 	= '</li>';
 	 	
 	 /**
 	  * Constructor
@@ -25,24 +57,37 @@ class Breadcrumbs {
 	  *
 	  */
 	public function __construct()
-	{	
-		$this->ci =& get_instance();
-		// Load config file
-		$this->ci->load->config('breadcrumbs');
-		// Get breadcrumbs display options
-		$this->tag_open = $this->ci->config->item('tag_open');
-		$this->tag_close = $this->ci->config->item('tag_close');
-		$this->divider = $this->ci->config->item('divider');
-		$this->crumb_open = $this->ci->config->item('crumb_open');
-		$this->crumb_close = $this->ci->config->item('crumb_close');
-		$this->crumb_last_open = $this->ci->config->item('crumb_last_open');
-		$this->crumb_divider = $this->ci->config->item('crumb_divider');
+	{
+		$this->configs = $this->config->item('crumb');
+		
+		// Load configs
+		self::_load();
 		
 		log_message('debug', "Breadcrumbs Class Initialized");
 	}
 	
 	// --------------------------------------------------------------------
-
+	
+	/**
+	  * Load configs
+	  *
+	  * @access	private
+	  *
+	  */
+	private function _load()
+	{
+		if(!empty($this->configs))
+		{
+			foreach($this->configs as $k => $item)
+			{
+				if(isset($this->{$k}))
+				{
+					$this->{$k} = $item;
+				}
+			}
+		}
+	}
+	
 	/**
 	 * Append crumb to stack
 	 *
@@ -54,13 +99,25 @@ class Breadcrumbs {
 	function push($page, $href)
 	{
 		// no page or href provided
-		if (!$page OR !$href) return;
+		if (empty($page) OR empty($href)) return $this;
 		
-		// Prepend site url
-		$href = site_url($href);
+		if(is_scalar($page))
+		{
+			// Prepend site url
+			$href = site_url($href);
+			
+			// push breadcrumb
+			$this->breadcrumbs[$href] = array('page' => $page, 'href' => $href);
+		}
+		else
+		{
+			foreach($page as $k => $v)
+			{
+				self::push($k,$v);
+			}
+		}
 		
-		// push breadcrumb
-		$this->breadcrumbs[$href] = array('page' => $page, 'href' => $href);
+		return $this;
 	}
 	
 	// --------------------------------------------------------------------
@@ -75,14 +132,26 @@ class Breadcrumbs {
 	 */		
 	function unshift($page, $href)
 	{
-		// no crumb provided
-		if (!$page OR !$href) return;
+		// no page or href provided
+		if (empty($page) OR empty($href)) return $this;
 		
-		// Prepend site url
-		$href = site_url($href);
+		if(is_scalar($page))
+		{
+			// Prepend site url
+			$href = site_url($href);
+			
+			// add at firts
+			array_unshift($this->breadcrumbs, array('page' => $page, 'href' => $href));
+		}
+		else
+		{
+			foreach($page as $k => $v)
+			{
+				self::unshift($k,$v);
+			}
+		}
 		
-		// add at firts
-		array_unshift($this->breadcrumbs, array('page' => $page, 'href' => $href));
+		return $this;
 	}
 	
 	// --------------------------------------------------------------------
@@ -95,27 +164,31 @@ class Breadcrumbs {
 	 */		
 	function show()
 	{
-		if ($this->breadcrumbs) {
-		
+		if (!empty($this->breadcrumbs))
+		{
 			// set output variable
-			$output = $this->tag_open;
+			$output = $this->full_tag_open;
 			
 			// construct output
-			foreach ($this->breadcrumbs as $key => $crumb) {
+			foreach ($this->breadcrumbs as $key => $crumb) 
+			{
 				$keys = array_keys($this->breadcrumbs);
-				if (end($keys) == $key) {
-					$output .= $this->crumb_last_open . '' . $crumb['page'] . '' . $this->crumb_close;
-				} else {
-					$output .= $this->crumb_open.'<a href="' . $crumb['href'] . '">' . $crumb['page'] . '</a> '.$this->crumb_divider.$this->crumb_close;
+				if (end($keys) == $key)
+				{
+					$output .= $this->last_tag_open . '' . $crumb['page'] . '' . $this->last_tag_close;
+				}
+				else
+				{
+					$output .= $this->tag_open.'<a href="' . $crumb['href'] . '">' . $crumb['page'] . '</a> '.$this->divider.$this->tag_close;
 				}
 			}
 			
 			// return output
-			return $output . $this->tag_close . PHP_EOL;
+			return $output . $this->full_tag_close . PHP_EOL;
 		}
 		
 		// no crumbs
-		return '';
+		return NULL;
 	}
 
 }
