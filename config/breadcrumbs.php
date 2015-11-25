@@ -13,6 +13,7 @@ $config['crumb']['tag_open'] 		= '<li>';
 $config['crumb']['tag_close'] 		= '</li>';
 $config['crumb']['last_tag_open'] 	= '<li class="active">';
 $config['crumb']['last_tag_close'] 	= '</li>';
+$config['crumb']['a_model'] 			= '<a href="{href}">{page}</a>';
 
 
 /* End of file breadcrumbs.php */
