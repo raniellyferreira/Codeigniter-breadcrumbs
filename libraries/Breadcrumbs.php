@@ -5,8 +5,8 @@
  * This class manages the breadcrumb object
  *
  * @package		Breadcrumb
- * @version		1.1.3
- * @last edit	25/11/2015
+ * @version		1.1.4
+ * @last edit	02/06/2016
  * @author 		Buti <buti@nobuti.com>
  * @edited by	Ranielly Ferreira <raniellyferreira@outlook.com>
  * @copyright 	Copyright (c) 2012-2015, Buti
@@ -130,9 +130,14 @@ class Breadcrumbs_model extends CI_Model {
 		{
 			if(!empty($href))
 			{
-				// Prepend site url
-				$href = site_url($href);
-			
+				$arrUrl = parse_url($href);
+				if(empty($arrUrl['scheme']))
+				{
+					// Prepend site url
+					$href = site_url($href);
+				}
+				unset($arrUrl);
+				
 				// push breadcrumb
 				$this->breadcrumbs[$href] = array('page' => $page, 'href' => $href);
 			}
